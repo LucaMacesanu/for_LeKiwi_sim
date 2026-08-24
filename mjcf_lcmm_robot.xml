@@ -192,8 +192,23 @@
 
     <worldbody>
         <light directional="true" pos="-0.5 0.5 3" dir="0 0 -1" />
-        <!-- <geom pos="0 0 0" size="1 1 1" type="plane" rgba="1 0.83 0.61 0.5" /> -->
-        <body name="base_plate_layer1-v5-1" pos="0.0 0.0 0.0" euler="-0.0 0.0 -0.0">
+        <!-- Floor added 2026-08-24 for pure-sim driving tests. contype/conaffinity explicitly
+             re-enabled (the file-wide default at the top disables both for every geom, to avoid
+             this model's self-collision mess -- see that comment). Root Z position of the root
+             body below (base_plate_layer1-v5-1) was set precisely via forward-kinematics
+             measurement so the wheel collision spheres rest a hair above this plane, not
+             penetrating it (a penetrating start causes a violent first-step "pop"). -->
+        <geom name="floor" type="plane" size="3 3 0.1" pos="0 0 0" rgba="0.75 0.75 0.78 1"
+              contype="1" conaffinity="1" friction="1 0.005 0.0001"/>
+        <!-- Block target added 2026-08-24 for manual driving/manipulation practice. Free body,
+             resting on the floor a short distance in front of the robot's start pose. -->
+        <body name="target_block" pos="0.4 0.0 0.025">
+            <freejoint name="target_block_free"/>
+            <geom name="target_block_geom" type="box" size="0.025 0.025 0.025" rgba="0.2 0.5 0.9 1"
+                  contype="1" conaffinity="1" friction="0.8 0.005 0.0001" mass="0.05"/>
+        </body>
+        <body name="base_plate_layer1-v5-1" pos="0.0 0.0 0.03495" euler="-0.0 0.0 -0.0">
+            <freejoint name="base_free"/>
             <site name="red_sphere" pos="0 0 0" size="0.01" rgba="1 0 0 1" type="sphere"/>
             <geom name="base_plate_layer1-v5-1_geom" type="mesh" mesh="base_plate_layer1-v5-1" pos="0 0 0" euler="0 0 0" />
             <inertial mass="1.9468624348344596" pos="-4.730687660675253e-15 -2.7155537377808555e-05 -0.0035000000000000005" fullinertia="0.005637109888809055 0.005628440956780792 0.0112496514690387 1.3447333053523504e-16 1.7848833522297417e-20 2.6469779601696886e-23" />
@@ -209,6 +224,16 @@
                         <inertial mass="0.08665496109754897" pos="8.50877658112488e-09 7.358945011137765e-09 0.0023811166424899887" fullinertia="1.2296291761641504e-05 1.2296276073121143e-05 2.2911778015411222e-05 -3.19167294920219e-12 1.755992026942528e-12 1.5186622033709633e-12" />
                         <body name="4-Omni-Directional-Wheel_Single_Body-v1-2" pos="-2.453269466693399e-18 0.0 0.0174625" euler="-3.141592653589793 -1.5192908393215678e-64 -0.2617993877991494">
                             <geom name="4-Omni-Directional-Wheel_Single_Body-v1-2_geom" type="mesh" mesh="4-Omni-Directional-Wheel_Single_Body-v1-2" pos="0 0 0" euler="0 0 0" />
+                            <!-- Collision proxy added 2026-08-24 for floor driving -- the detailed omni-wheel
+                                 mesh (with its individual roller geometry) is a poor floor-contact shape, likely
+                                 part of why an earlier driving attempt barely worked even at high torque. A
+                                 sphere sized to the mesh's own radial extent (measured via mesh_vert bbox:
+                                 ~0.0508m) approximates an omni wheel reasonably: isotropic contact, low sliding
+                                 friction lets it slip sideways somewhat like the real passive rollers do, while
+                                 the driven rotation still pushes it forward. Visual mesh geom above is unchanged
+                                 (default contype/conaffinity=0, doesn't collide) -- this is purely for contact. -->
+                            <geom type="sphere" size="0.0508" pos="0 0 0" contype="1" conaffinity="1" group="3"
+                                  rgba="1 0 0 0.15" friction="0.4 0.005 0.0001"/>
                             <inertial mass="1.3542854082324305" pos="-7.105207895657716e-08 -1.1369917947312704e-07 -1.2090586078983279e-08" fullinertia="0.0010936200374455458 0.0010936108480286116 0.0018798127501507855 -5.245142023675448e-09 4.046730352778215e-10 1.0004485488405523e-10" />
                         </body>
                     </body>
@@ -226,6 +251,9 @@
                         <inertial mass="0.08665496109754897" pos="8.508776579152501e-09 7.358945011269938e-09 0.0023811166424899787" fullinertia="1.2296291761641589e-05 1.2296276073121566e-05 2.2911778015411107e-05 -3.1916729680995547e-12 1.755991986238418e-12 1.5186621750295066e-12" />
                         <body name="4-Omni-Directional-Wheel_Single_Body-v1-1" pos="-8.88178419700111e-18 3.3306690738754695e-17 0.01746250000000007" euler="3.141592653589793 5.5511151231257747e-17 1.8325957145940461">
                             <geom name="4-Omni-Directional-Wheel_Single_Body-v1-1_geom" type="mesh" mesh="4-Omni-Directional-Wheel_Single_Body-v1-1" pos="0 0 0" euler="0 0 0" />
+                            <!-- Collision proxy, see the matching comment on wheel -v1-2 above. -->
+                            <geom type="sphere" size="0.0508" pos="0 0 0" contype="1" conaffinity="1" group="3"
+                                  rgba="1 0 0 0.15" friction="0.4 0.005 0.0001"/>
                             <inertial mass="1.3542854082324305" pos="-7.105207896524954e-08 -1.1369917948959942e-07 -1.2090586104095832e-08" fullinertia="0.0010936200374455313 0.0010936108480285981 0.0018798127501507892 -5.2451420243259696e-09 4.0467303541420525e-10 1.0004485627777097e-10" />
                         </body>
                     </body>
@@ -243,6 +271,9 @@
                         <inertial mass="0.08665496109754897" pos="8.508776583007207e-09 7.358945014555165e-09 0.0023811166424899874" fullinertia="1.2296291761641274e-05 1.2296276073121517e-05 2.291177801541124e-05 -3.1916729470190563e-12 1.7559920314671269e-12 1.5186621186676676e-12" />
                         <body name="4-Omni-Directional-Wheel_Single_Body-v1" pos="-2.220446049250313e-18 -7.105427357601001e-17 0.017462499999999947" euler="-3.141592653589793 6.689058043222894e-18 -0.2617993877991494">
                             <geom name="4-Omni-Directional-Wheel_Single_Body-v1_geom" type="mesh" mesh="4-Omni-Directional-Wheel_Single_Body-v1" pos="0 0 0" euler="0 0 0" />
+                            <!-- Collision proxy, see the matching comment on wheel -v1-2 above. -->
+                            <geom type="sphere" size="0.0508" pos="0 0 0" contype="1" conaffinity="1" group="3"
+                                  rgba="1 0 0 0.15" friction="0.4 0.005 0.0001"/>
                             <inertial mass="1.3542854082324305" pos="-7.105207895771595e-08 -1.1369917947234093e-07 -1.2090586101420118e-08" fullinertia="0.0010936200374455356 0.0010936108480285988 0.0018798127501507824 -5.245142023187557e-09 4.046730340142343e-10 1.0004485862393181e-10" />
                         </body>
                     </body>
