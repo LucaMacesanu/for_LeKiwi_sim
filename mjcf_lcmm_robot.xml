@@ -238,7 +238,8 @@
                                  the driven rotation still pushes it forward. Visual mesh geom above is unchanged
                                  (default contype/conaffinity=0, doesn't collide) -- this is purely for contact. -->
                             <geom type="sphere" size="0.0508" pos="0 0 0" contype="1" conaffinity="1" group="3"
-                                  rgba="1 0 0 0.15" friction="0.4 0.005 0.0001"/>
+                                  rgba="1 0 0 0.15" friction="0.4 0.005 0.0001"
+                                  solref="0.01 1" solimp="0.9 0.95 0.01"/>
                             <inertial mass="1.3542854082324305" pos="-7.105207895657716e-08 -1.1369917947312704e-07 -1.2090586078983279e-08" fullinertia="0.0010936200374455458 0.0010936108480286116 0.0018798127501507855 -5.245142023675448e-09 4.046730352778215e-10 1.0004485488405523e-10" />
                         </body>
                     </body>
@@ -258,7 +259,8 @@
                             <geom name="4-Omni-Directional-Wheel_Single_Body-v1-1_geom" type="mesh" mesh="4-Omni-Directional-Wheel_Single_Body-v1-1" pos="0 0 0" euler="0 0 0" />
                             <!-- Collision proxy, see the matching comment on wheel -v1-2 above. -->
                             <geom type="sphere" size="0.0508" pos="0 0 0" contype="1" conaffinity="1" group="3"
-                                  rgba="1 0 0 0.15" friction="0.4 0.005 0.0001"/>
+                                  rgba="1 0 0 0.15" friction="0.4 0.005 0.0001"
+                                  solref="0.01 1" solimp="0.9 0.95 0.01"/>
                             <inertial mass="1.3542854082324305" pos="-7.105207896524954e-08 -1.1369917948959942e-07 -1.2090586104095832e-08" fullinertia="0.0010936200374455313 0.0010936108480285981 0.0018798127501507892 -5.2451420243259696e-09 4.0467303541420525e-10 1.0004485627777097e-10" />
                         </body>
                     </body>
@@ -278,7 +280,8 @@
                             <geom name="4-Omni-Directional-Wheel_Single_Body-v1_geom" type="mesh" mesh="4-Omni-Directional-Wheel_Single_Body-v1" pos="0 0 0" euler="0 0 0" />
                             <!-- Collision proxy, see the matching comment on wheel -v1-2 above. -->
                             <geom type="sphere" size="0.0508" pos="0 0 0" contype="1" conaffinity="1" group="3"
-                                  rgba="1 0 0 0.15" friction="0.4 0.005 0.0001"/>
+                                  rgba="1 0 0 0.15" friction="0.4 0.005 0.0001"
+                                  solref="0.01 1" solimp="0.9 0.95 0.01"/>
                             <inertial mass="1.3542854082324305" pos="-7.105207895771595e-08 -1.1369917947234093e-07 -1.2090586101420118e-08" fullinertia="0.0010936200374455356 0.0010936108480285988 0.0018798127501507824 -5.245142023187557e-09 4.046730340142343e-10 1.0004485862393181e-10" />
                         </body>
                     </body>
@@ -321,8 +324,21 @@
                 <geom name="94868A713_NO-THREADS_Female-Threaded-Hex-Standoff-3_geom" type="mesh" mesh="94868A713_NO-THREADS_Female-Threaded-Hex-Standoff-3" pos="0 0 0" euler="0 0 0" />
                 <inertial mass="0.006150070863406618" pos="2.1866952693017084e-14 -1.2010287342434374e-09 -6.6970201384464195e-09" fullinertia="1.096519665085043e-06 1.0965196548945862e-06 1.8373964931164182e-08 2.7105054312137834e-20 2.6969529040576923e-18 -9.149559950144271e-14" />
             </body>
-        </body>
-        <body name="base_plate_layer2-v1" pos="0.0 -6.430841866638185e-19 0.056999999999999995" euler="-0.0 0.0 -0.0">
+        <!-- Reparented under base_plate_layer1-v5-1 2026-08-24 (was a separate top-level body,
+             sibling of base_plate_layer1-v5-1 under worldbody -- before today both were fully
+             static with no joints, so they just happened to visually coincide with no real
+             mechanical connection between them). Adding a <freejoint> to base_plate_layer1-v5-1
+             alone (for the new floor-driving setup) broke that: only the base plate could move,
+             the arm stayed frozen in world space, driving the base out from under it. A weld
+             equality constraint was tried first and reverted -- it destabilized the wheel
+             contact dynamics that were stable without it (see LeKiwi-sim git history). True
+             nesting has zero extra constraint-solver cost, which is why this was worth the
+             manual XML restructuring risk instead. pos re-based from world-relative Z (0.057,
+             this body's original standalone position) to parent-relative (0.02205 = 0.057 -
+             0.03495, the new parent's own world Z) -- X/Y were both ~0 already, needed no
+             adjustment. Neither body has any rotation (euler all zero), so this was a pure
+             Z-translation fixup, no rotation math needed. -->
+        <body name="base_plate_layer2-v1" pos="0.0 -6.430841866638185e-19 0.02205" euler="-0.0 0.0 -0.0">
             <geom name="base_plate_layer2-v1_geom" type="mesh" mesh="base_plate_layer2-v1" pos="0 0 0" euler="0 0 0" />
             <inertial mass="1.9468624348344596" pos="-4.730687660675253e-15 -2.7155537377808555e-05 -0.0034999999999999966" fullinertia="0.0056371098888090545 0.005628440956780792 0.0112496514690387 1.3447333053523506e-16 1.7848833522266602e-20 0.0" />
             <body name="Bottom-V2-v3" pos="-2.980230284777008e-11 -0.06400000000000002 1.4210854715202004e-16" euler="-2.2293090993986824e-33 9.57182296485495e-19 -3.141592653589793">
@@ -424,6 +440,7 @@
                     <inertial mass="0.00454511487954422" pos="-1.7881248309573627e-13 -1.4904879645571163e-20 0.0010740097666847425" fullinertia="1.2518150597416012e-07 1.2518150393394235e-07 2.464408524633815e-07 8.715254501524865e-23 1.283788438507426e-19 -1.6828115086053736e-24" />
                 </body>
             </body>
+        </body>
         </body>
         <body name="drive_motor_mount-v4" pos="-0.020610000007450578 -0.09 0.0020000000000000018" euler="-0.0 0.0 -1.5707963267948966">
             <geom name="drive_motor_mount-v4_geom" type="mesh" mesh="drive_motor_mount-v4" pos="0 0 0" euler="0 0 0" />
