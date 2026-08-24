@@ -97,14 +97,20 @@
                 <position ctrlrange="-3.4 3.4"/>
             </default>
             <default class="Wrist_Roll">
-                <!-- Range widened and shifted 2026-08-24 (was "-3.14158 3.14158", i.e. centered
-                     on 0) to stay centered on the new ARM_OFFSET_DEG reference of 180 deg (see
-                     bridge_node.py for why) -- this joint has no real physical hard stop, so
-                     there's nothing wrong with letting qpos sit anywhere past +-180; MuJoCo hinge
-                     joints don't auto-wrap, a value like 300 deg is a perfectly valid rotation
-                     from the MJCF's native zero. 10 deg margin outside the actuator's own
-                     ctrlrange below (20-340 deg), same pattern as the other joints. -->
-                <joint axis="0 0 1" range="0.17453 6.10865"/>
+                <!-- CORRECTED 2026-08-24: the previous "no real physical hard stop, continuous
+                     joint" assumption below was wrong. Hand-testing with torque disabled found a
+                     real, single-sided mechanical hard stop, reproduced rock-steady at -105 deg
+                     (leader-degree convention) across 3 independent tests -- almost certainly a
+                     cable/wire-wrap limit. Confirmed asymmetric: a positive-direction sweep found
+                     no stop within the leader-degree software's own +-180 representable window
+                     (LeRobot's DEGREES normalization has no wraparound handling, so going "the
+                     long way around" to the same physical stop isn't safely reachable via this
+                     degree convention anyway -- see leader_arm_node.py's WRIST_ROLL_CLAMP).
+                     Range here re-derived from that same asymmetric leader-degree clamp
+                     (-100 to +160, see WRIST_ROLL_CLAMP in leader_arm_node.py/hw_bridge_node.py),
+                     converted through sim_deg = -leader_deg + 180, with 5 deg extra margin
+                     outside the actuator's own ctrlrange below (20-280 deg). -->
+                <joint axis="0 0 1" range="0.26180 4.97419"/>
             </default>
             <default class="Jaw">
                 <!-- Real range from the official SO-ARM100 gripper joint (2026-08-21), replacing
@@ -170,10 +176,11 @@
         <position class="Pitch" name="Pitch" joint="Pitch" ctrlrange="-3.14158 0.17453"/>
         <position class="Elbow" name="Elbow" joint="Elbow" ctrlrange="-0.08727 3.14158"/>
         <position class="Wrist_Pitch" name="Wrist_Pitch" joint="Wrist_Pitch" ctrlrange="-0.34907 3.14159"/>
-        <!-- Re-centered 2026-08-24 from "-2.79253 2.79253" (+-160 deg around 0) to +-160 deg
-             around the new 180 deg reference -- see bridge_node.py's ARM_OFFSET_DEG comment and
-             the class="Wrist_Roll" joint range above for why 0 was wrong. -->
-        <position class="Wrist_Roll" name="Wrist_Roll" joint="Wrist_Roll" ctrlrange="0.34907 5.93412"/>
+        <!-- CORRECTED 2026-08-24 (was "0.34907 5.93412", a symmetric +-160 deg around the 180
+             reference -- wrong, see the class="Wrist_Roll" joint range above for the real
+             asymmetric hand-found hard stop). Matches WRIST_ROLL_CLAMP (-100/+160 leader-degree)
+             in leader_arm_node.py/hw_bridge_node.py, converted via sim_deg = -leader_deg + 180. -->
+        <position class="Wrist_Roll" name="Wrist_Roll" joint="Wrist_Roll" ctrlrange="0.34907 4.88692"/>
         <!-- ctrlrange overridden 2026-08-21 to match the real joint range (was the shared
              so_arm100 default of +-pi, way past the actual mechanical limits). forcerange was
              also briefly set to the official SO-101 gripper's real spec (-3.35/3.35 N*m) but that
