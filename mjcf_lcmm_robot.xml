@@ -97,7 +97,14 @@
                 <position ctrlrange="-3.4 3.4"/>
             </default>
             <default class="Wrist_Roll">
-                <joint axis="0 0 1" range="-3.14158 3.14158"/>
+                <!-- Range widened and shifted 2026-08-24 (was "-3.14158 3.14158", i.e. centered
+                     on 0) to stay centered on the new ARM_OFFSET_DEG reference of 180 deg (see
+                     bridge_node.py for why) -- this joint has no real physical hard stop, so
+                     there's nothing wrong with letting qpos sit anywhere past +-180; MuJoCo hinge
+                     joints don't auto-wrap, a value like 300 deg is a perfectly valid rotation
+                     from the MJCF's native zero. 10 deg margin outside the actuator's own
+                     ctrlrange below (20-340 deg), same pattern as the other joints. -->
+                <joint axis="0 0 1" range="0.17453 6.10865"/>
             </default>
             <default class="Jaw">
                 <!-- Real range from the official SO-ARM100 gripper joint (2026-08-21), replacing
@@ -163,7 +170,10 @@
         <position class="Pitch" name="Pitch" joint="Pitch" ctrlrange="-3.14158 0.17453"/>
         <position class="Elbow" name="Elbow" joint="Elbow" ctrlrange="-0.08727 3.14158"/>
         <position class="Wrist_Pitch" name="Wrist_Pitch" joint="Wrist_Pitch" ctrlrange="-0.34907 3.14159"/>
-        <position class="Wrist_Roll" name="Wrist_Roll" joint="Wrist_Roll" ctrlrange="-2.79253 2.79253"/>
+        <!-- Re-centered 2026-08-24 from "-2.79253 2.79253" (+-160 deg around 0) to +-160 deg
+             around the new 180 deg reference -- see bridge_node.py's ARM_OFFSET_DEG comment and
+             the class="Wrist_Roll" joint range above for why 0 was wrong. -->
+        <position class="Wrist_Roll" name="Wrist_Roll" joint="Wrist_Roll" ctrlrange="0.34907 5.93412"/>
         <!-- ctrlrange overridden 2026-08-21 to match the real joint range (was the shared
              so_arm100 default of +-pi, way past the actual mechanical limits). forcerange was
              also briefly set to the official SO-101 gripper's real spec (-3.35/3.35 N*m) but that
