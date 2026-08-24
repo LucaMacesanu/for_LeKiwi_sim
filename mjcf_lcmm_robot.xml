@@ -1,6 +1,11 @@
 <mujoco model="mjcf_lcmm_robot">
     <compiler angle="radian" />
     <asset>
+        <!-- Standard MuJoCo checkered-floor texture/material (2026-08-24) -- the floor plane's
+             own flat gray color was nearly indistinguishable from the viewer's background. -->
+        <texture type="2d" name="groundplane" builtin="checker" mark="edge" rgb1="0.2 0.3 0.4"
+                 rgb2="0.1 0.15 0.2" markrgb="0.8 0.8 0.8" width="300" height="300"/>
+        <material name="groundplane" texture="groundplane" texuniform="true" texrepeat="5 5" reflectance="0.1"/>
         <mesh name="drive_motor_mount-v4-3" file="meshes/drive_motor_mount-v4-3.stl" scale="0.001 0.001 0.001" />
         <mesh name="base_plate_layer1-v5-1" file="meshes/base_plate_layer1-v5-1.stl" scale="0.001 0.001 0.001" />
         <mesh name="ST3215_Servo_Motor-v1-2" file="meshes/ST3215_Servo_Motor-v1-2.stl" scale="0.001 0.001 0.001" />
@@ -198,7 +203,7 @@
              body below (base_plate_layer1-v5-1) was set precisely via forward-kinematics
              measurement so the wheel collision spheres rest a hair above this plane, not
              penetrating it (a penetrating start causes a violent first-step "pop"). -->
-        <geom name="floor" type="plane" size="3 3 0.1" pos="0 0 0" rgba="0.75 0.75 0.78 1"
+        <geom name="floor" type="plane" size="3 3 0.1" pos="0 0 0" material="groundplane"
               contype="1" conaffinity="1" friction="1 0.005 0.0001"/>
         <!-- Block target added 2026-08-24 for manual driving/manipulation practice. Free body,
              resting on the floor a short distance in front of the robot's start pose. -->
