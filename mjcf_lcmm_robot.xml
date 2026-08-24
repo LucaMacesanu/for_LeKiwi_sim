@@ -202,9 +202,14 @@
              this model's self-collision mess -- see that comment). Root Z position of the root
              body below (base_plate_layer1-v5-1) was set precisely via forward-kinematics
              measurement so the wheel collision spheres rest a hair above this plane, not
-             penetrating it (a penetrating start causes a violent first-step "pop"). -->
+             penetrating it (a penetrating start causes a violent first-step "pop").
+             conaffinity is a 2-bit mask: bit 0 (value 1) matches the wheel spheres and the
+             target block, bit 1 (value 2) matches the new arm-floor collision proxies added
+             below -- kept as a separate bit so those proxies collide with the floor but NOT
+             with each other or with the wheels/block, avoiding reopening this model's
+             extensively-documented self-collision mess. -->
         <geom name="floor" type="plane" size="3 3 0.1" pos="0 0 0" material="groundplane"
-              contype="1" conaffinity="1" friction="1 0.005 0.0001"/>
+              contype="1" conaffinity="3" friction="1 0.005 0.0001"/>
         <!-- Block target added 2026-08-24 for manual driving/manipulation practice. Free body,
              resting on the floor a short distance in front of the robot's start pose. -->
         <body name="target_block" pos="0.4 0.0 0.025">
@@ -385,6 +390,11 @@
                                         <!-- Elbow motor (third from the bottom) -->
                                         <joint name="Elbow" class="Elbow" type="hinge" pos="0.06484999736968537 -0.03199967927926841 0.01969999730810396" />
                                         <geom name="SO_ARM100_08k_Mirror-v1_geom" type="mesh" mesh="SO_ARM100_08k_Mirror-v1" pos="0 0 0" euler="0 0 0" />
+                                        <!-- Floor-collision proxy added 2026-08-24 (elbow-area link) -- contype=2 matches
+                                             only the floor's bit-1 conaffinity (see the floor geom comment), so this collides
+                                             with the floor but not with other arm links or the wheels/block. Sized from the
+                                             mesh's own vertex bbox (extent ~0.037x0.067x0.137m). -->
+                                        <geom type="sphere" size="0.03" pos="0 0 0" contype="2" conaffinity="0" group="3" rgba="0.9 0.2 0.2 0.15"/>
                                         <inertial mass="0.8772447501056027" pos="0.0027296574022326776 -0.03213929084317096 0.004485121191960146" fullinertia="0.00036436892048462635 0.0012434311777630017 0.0009927953405503495 -8.805475751573561e-06 -0.00011598549140341498 -1.0053165291667338e-06" />
                                         <body name="STS3215_03a-v1-1" pos="-0.0585499073366074 -0.037200000000000046 -0.0004999999999999976" euler="9.63735264431557e-16 -1.9721522630525295e-31 3.141592653589793">
                                             <geom name="STS3215_03a-v1-1_geom" type="mesh" mesh="STS3215_03a-v1-1" pos="0 0 0" euler="0 0 0" rgba="1 0 0 1"/>
@@ -399,6 +409,8 @@
                                                     <body name="Wrist_Roll_08c-v1" pos="0.0125 0.0 0.018700000000000046" euler="-0.0 0.0 3.141592653589793">
                                                         <joint name="Wrist_Roll" type="hinge" class="Wrist_Roll" pos="0 0 0" />
                                                         <geom name="Wrist_Roll_08c-v1_geom" type="mesh" mesh="Wrist_Roll_08c-v1" pos="0 0 0" euler="0 0 0" />
+                                                        <!-- Floor-collision proxy, see the matching comment on the elbow-area link above. -->
+                                                        <geom type="sphere" size="0.035" pos="0 0 0" contype="2" conaffinity="0" group="3" rgba="0.9 0.2 0.2 0.15"/>
                                                         <inertial mass="0.44698022927880193" pos="-0.013763226944642652 -0.0005928638236687243 0.02930577613078056" fullinertia="0.0003009649490412974 0.0003330307502686583 0.00016593464746505828 4.121088984336396e-06 5.571357694080248e-05 -1.1110664231131137e-06" />
                                                         <body name="STS3215_03a-v1" pos="0.007299999999999977 9.999999999994457e-05 0.02312500000000009" euler="1.5707963267948966 3.9443045261050573e-31 3.9443045261050625e-31">
                                                             <geom name="STS3215_03a-v1_geom" type="mesh" mesh="STS3215_03a-v1" pos="0 0 0" euler="0 0 0" rgba="1 0 0 1"/>
@@ -422,6 +434,10 @@
                                                             <body name="Moving_Jaw_08d-v1" pos="0.0125 1.804344e-07 0.0187003556" euler="-3.141592653589793 1.97215226305253e-31 -0.0">
                                                                 <joint name="Jaw" type="hinge" class="Jaw" />
                                                                 <geom name="Moving_Jaw_08d-v1_geom" type="mesh" mesh="moving_jaw_so101_v1" pos="-5.55112e-17 -5.55112e-17 0.0189" quat="1 -0 3.00524e-16 -2.00834e-17" />
+                                                                <!-- Floor-collision proxy, see the matching comment on the elbow-area link above.
+                                                                     Most important one of the three -- the gripper is what will actually reach
+                                                                     down toward the floor/block during manipulation. -->
+                                                                <geom type="sphere" size="0.025" pos="0 0 0.02" contype="2" conaffinity="0" group="3" rgba="0.9 0.2 0.2 0.15"/>
                                                                 <inertial mass="0.1586808414280307" pos="-0.0016198160357624469 -0.03039637292829377 0.00038432016030383147" fullinertia="8.673205684445355e-05 2.3703900786580218e-05 7.037496093636329e-05 -4.189874398157459e-06 -8.253022754040354e-08 -1.510571385982212e-06" />
                                                             </body>
                                                         </body>
