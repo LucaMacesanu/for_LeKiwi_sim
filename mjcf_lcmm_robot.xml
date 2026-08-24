@@ -39,6 +39,11 @@
         <mesh name="Wrist_Roll_08c-v1" file="meshes/Wrist_Roll_08c-v1.stl" scale="0.001 0.001 0.001" />
         <mesh name="STS3215_03a-v1" file="meshes/STS3215_03a-v1.stl" scale="0.001 0.001 0.001" />
         <mesh name="Moving_Jaw_08d-v1" file="meshes/Moving_Jaw_08d-v1.stl" scale="0.001 0.001 0.001" />
+        <!-- Swapped in from the official SO-ARM100 repo (2026-08-21) to replace this model's
+             own hand-authored Jaw joint, which never worked correctly (fabricated ~348 degree
+             range, no verified real proportions). Already in meters, unlike this file's other
+             meshes -- SO-101's own MJCF applies no scale to it either. -->
+        <mesh name="moving_jaw_so101_v1" file="meshes/moving_jaw_so101_v1.stl" />
         <mesh name="94868A713_NO-THREADS_Female-Threaded-Hex-Standoff-1" file="meshes/94868A713_NO-THREADS_Female-Threaded-Hex-Standoff-1.stl" scale="0.001 0.001 0.001" />
         <mesh name="94868A713_NO-THREADS_Female-Threaded-Hex-Standoff-2" file="meshes/94868A713_NO-THREADS_Female-Threaded-Hex-Standoff-2.stl" scale="0.001 0.001 0.001" />
         <mesh name="94868A713_NO-THREADS_Female-Threaded-Hex-Standoff-3" file="meshes/94868A713_NO-THREADS_Female-Threaded-Hex-Standoff-3.stl" scale="0.001 0.001 0.001" />
@@ -46,11 +51,31 @@
     </asset>
 
     <default>
+        <!-- Root default (applies to any geom without an explicit class -- i.e. nearly all of
+             this model's 47 geoms, since only 4 actually opt into the visual/collision class
+             system defined below). Found 2026-08-20: without this, those 43 un-classed geoms
+             collide with each other using their full detailed STL meshes, which repeatedly
+             self-intersect at various joint-angle combinations (found so far: the wheel
+             motor/hub assemblies, Rotation_Pitch vs. Base/servo-housing/Passive_Horn, Base vs.
+             a mirror clip past ~100deg of Rotation, and two more pairs that only appeared during
+             live multi-joint teleop). Each was fixable one at a time via <contact><exclude>, but
+             new ones kept appearing in different joint-angle combinations -- this model was
+             never actually built with self-collision in mind (the "collision" class below is
+             defined but unused by anything). There's currently no floor/external object in this
+             file, so disabling contact by default has no functional cost; if floor/object
+             contact is added later, give those specific geoms an explicit class that re-enables
+             contype/conaffinity rather than reverting this. -->
+        <geom contype="0" conaffinity="0"/>
         <default class="so_arm100">
             <joint frictionloss="0.1" armature="0.1"/>
-            <position kp="50" dampratio="1" forcerange="-35 35" ctrlrange="-3.14158 3.14158"/>
+            <position kp="50" dampratio="1" forcerange="-80 80" ctrlrange="-3.14158 3.14158"/>
             <default class="Rotation">
-                <joint axis="0 1 0" range="-3 3"/>
+                <!-- damping dropped 15->2 (2026-08-21), same reasoning as the Jaw fix: this was
+                     added early in the project for the OLD anti-shake attempt and already noted
+                     then to have "no visible effect" on shaking -- it's the only other joint that
+                     got this leftover treatment, and was adding response lag on top of the kp=150
+                     bump below. -->
+                <joint axis="0 1 0" range="-3 3" damping="2"/>
             </default>
             <default class="Pitch">
                 <joint axis="0 0 1" range="-3.14158 3.14"/>
@@ -59,13 +84,33 @@
                 <joint axis="0 0 1" range="-3.14 3.14158"/>
             </default>
             <default class="Wrist_Pitch">
-                <joint axis="1 0 0" range="-3.0 3.14"/>
+                <!-- Widened from 3.14 to 3.4 (2026-08-20): the offset that correctly maps the
+                     leader's wrist_flex=0 (true L-shape reference, verified live) to this
+                     joint's ~80deg target is correct, but normal wrist movement during real use
+                     regularly sends wrist_flex to around -102deg, which computes a target of
+                     ~182deg -- just past the old 180deg (3.14 rad) ceiling, pinning the joint
+                     and desyncing the whole downstream wrist/gripper pose from the real arm.
+                     The actuator's own ctrlrange (see <position> below) needs widening to match,
+                     since the shared so_arm100 default clamps ctrl to +-pi regardless of the
+                     joint's own range. -->
+                <joint axis="1 0 0" range="-3.0 3.4"/>
+                <position ctrlrange="-3.4 3.4"/>
             </default>
             <default class="Wrist_Roll">
                 <joint axis="0 0 1" range="-3.14158 3.14158"/>
             </default>
             <default class="Jaw">
-                <joint axis="0 0 1" range="-3.14 3.0"/>
+                <!-- Real range from the official SO-ARM100 gripper joint (2026-08-21), replacing
+                     this model's fabricated -3.14/3.0 (~348 degree) range -- see the body swap
+                     below for the matching mesh replacement.
+                     damping dropped 15->2 (2026-08-21): this was added early in the project for
+                     the OLD mesh's shake problem and was already noted then to have "no visible
+                     effect" on that. For the light (0.16kg) gripper body, 15 was large enough to
+                     visibly slow its response to a leader-driven position target, independent of
+                     the forcerange fix above -- damping resists velocity directly, on top of the
+                     actuator's own dampratio=1 critical-damping term. Left a small nonzero value
+                     rather than 0 to avoid reintroducing jitter. -->
+                <joint axis="0 0 1" range="-0.17453297762778586 1.7453291995659765" damping="2"/>
             </default>
             <default class="visual">
                 <geom type="mesh" contype="0" conaffinity="0" density="0" group="2" material="orange"/>
@@ -90,12 +135,37 @@
         <motor name="drive_motor_3" joint="ST3215_Servo_Motor-v1_Revolute-40" gear="1" />
 
         <!-- Arm joints -->
-        <position class="Rotation" name="Rotation" joint="Rotation"/>
-        <position class="Pitch" name="Pitch" joint="Pitch"/>
-        <position class="Elbow" name="Elbow" joint="Elbow"/>
-        <position class="Wrist_Pitch" name="Wrist_Pitch" joint="Wrist_Pitch"/>
+        <!-- Rotation gets a higher kp (150 vs the so_arm100 default 50) than the other arm
+             joints -- it carries the whole downstream arm's rotational inertia about the yaw
+             axis, so the shared default gain left it noticeably sluggish/laggy (measured
+             2026-08-20: still 4deg short of a 30deg step after 0.8s at kp=50, vs. settled within
+             0.5s and no overshoot at kp=150, well under the 80 N*m forcerange limit). -->
+        <!-- ctrlrange on these 4 added 2026-08-24 (Wrist_Roll excluded -- it's genuinely a
+             continuous-rotation joint on the real robot, see my_lekiwi.json's arm_wrist_roll
+             range_min/max spanning the full 0-4095 tick circle by design, not a bug). Before
+             this, all 5 non-gripper actuators inherited the shared so_arm100 default of
+             +-3.14158 regardless of the real joint's actual travel, so the MuJoCo viewer's own
+             Control-panel sliders let you drag every arm joint through a near-full circle even
+             though the real robot physically can't follow past its calibrated limits (they'd
+             just get clamped downstream by hw_bridge_node's DEGREE_CLAMP=160, which stays in
+             place as the real safety net -- this is a UX/realism fix to the sim, not that).
+             Values computed from my_lekiwi.json's real calibrated range_min/range_max (ticks,
+             4096/rev) converted through this file's leader-degree<->sim-radian mapping (see
+             ARM_OFFSET_DEG/ARM_SIGN in bridge_node.py), each clamped so it never exceeds this
+             joint's own physical <joint range=...> above (left untouched -- that's mesh/
+             collision-derived, not something to casually widen). -->
+        <position class="Rotation" name="Rotation" joint="Rotation" kp="150" ctrlrange="-2.00713 2.00713"/>
+        <position class="Pitch" name="Pitch" joint="Pitch" ctrlrange="-3.14158 0.17453"/>
+        <position class="Elbow" name="Elbow" joint="Elbow" ctrlrange="-0.08727 3.14158"/>
+        <position class="Wrist_Pitch" name="Wrist_Pitch" joint="Wrist_Pitch" ctrlrange="-0.34907 3.14159"/>
         <position class="Wrist_Roll" name="Wrist_Roll" joint="Wrist_Roll"/>
-        <position class="Jaw" name="Jaw" joint="Jaw"/>
+        <!-- ctrlrange overridden 2026-08-21 to match the real joint range (was the shared
+             so_arm100 default of +-pi, way past the actual mechanical limits). forcerange was
+             also briefly set to the official SO-101 gripper's real spec (-3.35/3.35 N*m) but that
+             made it visibly lag behind the other 5 joints, which all run on the shared -80/80
+             default -- this model isn't torque-realistic anywhere else, so singling out the
+             gripper as "realistic" just made it the slow outlier. Left on the shared default. -->
+        <position class="Jaw" name="Jaw" joint="Jaw" ctrlrange="-0.17453 1.74533"/>
     </actuator>
 
     <worldbody>
@@ -178,6 +248,7 @@
                 <body name="Camera-Model-v3" pos="0.005843306737767851 -6.514592966970533e-17 0.02401122309705938" euler="-9.937525710640365e-31 1.3962634015954634 1.5707963267948966">
                     <geom name="Camera-Model-v3_geom" type="mesh" mesh="Camera-Model-v3" pos="0 0 0" euler="0 0 0" />
                     <inertial mass="0.039920058315088616" pos="0.00011860470791938802 0.00023881874959842783 0.004326318838629241" fullinertia="5.219349028990072e-06 5.305573488496055e-06 7.674281395938296e-06 6.564111916115197e-08 1.3381791184156136e-08 2.6971366213773554e-08" />
+                    <camera name="front_camera" pos="0 0 0" euler="0 0 0" fovy="60"/>
                 </body>
             </body>
             <body name="94868A713_NO-THREADS_Female-Threaded-Hex-Standoff-1" pos="-0.09660254037844385 0.03267949192431126 0.025" euler="8.164311994315686e-17 0.0 -0.0">
@@ -258,9 +329,25 @@
                                                         <body name="STS3215_03a-v1" pos="0.007299999999999977 9.999999999994457e-05 0.02312500000000009" euler="1.5707963267948966 3.9443045261050573e-31 3.9443045261050625e-31">
                                                             <geom name="STS3215_03a-v1_geom" type="mesh" mesh="STS3215_03a-v1" pos="0 0 0" euler="0 0 0" rgba="1 0 0 1"/>
                                                             <inertial mass="0.2843033831904074" pos="-0.000300972436789567 6.754829985286537e-12 0.00012706492472183519" fullinertia="3.972527876478463e-05 7.348827769135499e-05 6.153681935694965e-05 4.014025813384388e-14 -5.568928366529186e-07 2.9489218277565024e-14" />
-                                                            <body name="Moving_Jaw_08d-v1" pos="0.0125 7.105427357601002e-17 -0.0016999999999999461" euler="-3.141592653589793 1.97215226305253e-31 -0.0">
-                                                                <joint name="Jaw" type="hinge" class="Jaw" pos="-2.6918961017465466e-09 -1.804344014685877e-07 -0.020400355551613226" />
-                                                                <geom name="Moving_Jaw_08d-v1_geom" type="mesh" mesh="Moving_Jaw_08d-v1" pos="0 0 0" euler="0 0 0" />
+                                                            <!-- Body swapped 2026-08-21: this model's own hand-authored Jaw
+                                                                 mesh/joint never worked correctly (see the range comment on
+                                                                 class="Jaw" above). Outer pos/euler kept unchanged (that's the
+                                                                 mount point into this model's own wrist chain); joint pos and
+                                                                 geom pos/quat below are copied verbatim from the official
+                                                                 SO-ARM100 "moving_jaw_so101_v1" body so the mesh hinges the same
+                                                                 way it does in the known-working official model. Axis convention
+                                                                 (this parent frame vs. SO-101's own "gripper" body frame) is
+                                                                 NOT verified -- confirm open/close direction is correct on first
+                                                                 test and flip ARM_SIGN-style if backwards, same as other joints. -->
+                                                            <!-- pos z shifted 2026-08-21 from -0.0017 to 0.0187 (+0.0204m along the
+                                                                 hinge axis) to compensate for zeroing out the joint's own local
+                                                                 offset (see joint pos below) when the mesh was swapped -- keeps the
+                                                                 physical pivot at the same real-world point the arm was built
+                                                                 around, computed numerically against the pre-swap model rather
+                                                                 than by hand (see scratchpad calc, 2026-08-21). -->
+                                                            <body name="Moving_Jaw_08d-v1" pos="0.0125 1.804344e-07 0.0187003556" euler="-3.141592653589793 1.97215226305253e-31 -0.0">
+                                                                <joint name="Jaw" type="hinge" class="Jaw" />
+                                                                <geom name="Moving_Jaw_08d-v1_geom" type="mesh" mesh="moving_jaw_so101_v1" pos="-5.55112e-17 -5.55112e-17 0.0189" quat="1 -0 3.00524e-16 -2.00834e-17" />
                                                                 <inertial mass="0.1586808414280307" pos="-0.0016198160357624469 -0.03039637292829377 0.00038432016030383147" fullinertia="8.673205684445355e-05 2.3703900786580218e-05 7.037496093636329e-05 -4.189874398157459e-06 -8.253022754040354e-08 -1.510571385982212e-06" />
                                                             </body>
                                                         </body>
@@ -285,4 +372,9 @@
             <inertial mass="0.035884017191401885" pos="0.00017900181977195112 -0.0006914486154622601 0.0004348187449640745" fullinertia="3.2235542654871883e-06 3.901284246443171e-06 6.890721819180175e-06 -1.4488185386067676e-08 -3.4701845947883736e-08 1.0877684749210782e-07" />
         </body>
     </worldbody>
+
+    <!-- Individual <contact><exclude> pairs (wheel hubs, Rotation_Pitch vs. several
+         neighbors, etc.) were tried here first but kept needing new entries as different
+         joint-angle combinations surfaced new overlaps -- superseded 2026-08-20 by disabling
+         self-collision globally at the root default (see <default> above). -->
 </mujoco>
