@@ -140,25 +140,30 @@
              axis, so the shared default gain left it noticeably sluggish/laggy (measured
              2026-08-20: still 4deg short of a 30deg step after 0.8s at kp=50, vs. settled within
              0.5s and no overshoot at kp=150, well under the 80 N*m forcerange limit). -->
-        <!-- ctrlrange on these 4 added 2026-08-24 (Wrist_Roll excluded -- it's genuinely a
-             continuous-rotation joint on the real robot, see my_lekiwi.json's arm_wrist_roll
-             range_min/max spanning the full 0-4095 tick circle by design, not a bug). Before
-             this, all 5 non-gripper actuators inherited the shared so_arm100 default of
-             +-3.14158 regardless of the real joint's actual travel, so the MuJoCo viewer's own
-             Control-panel sliders let you drag every arm joint through a near-full circle even
-             though the real robot physically can't follow past its calibrated limits (they'd
-             just get clamped downstream by hw_bridge_node's DEGREE_CLAMP=160, which stays in
-             place as the real safety net -- this is a UX/realism fix to the sim, not that).
-             Values computed from my_lekiwi.json's real calibrated range_min/range_max (ticks,
-             4096/rev) converted through this file's leader-degree<->sim-radian mapping (see
-             ARM_OFFSET_DEG/ARM_SIGN in bridge_node.py), each clamped so it never exceeds this
-             joint's own physical <joint range=...> above (left untouched -- that's mesh/
-             collision-derived, not something to casually widen). -->
+        <!-- ctrlrange on these 5 (all but Jaw, which has its own override below) added
+             2026-08-24. Before this, all 5 non-gripper actuators inherited the shared so_arm100
+             default of +-3.14158 regardless of the real joint's actual travel, so the MuJoCo
+             viewer's own Control-panel sliders let you drag every arm joint through a near-full
+             circle even though the real robot can't follow that far.
+             Rotation/Pitch/Elbow/Wrist_Pitch: values computed from my_lekiwi.json's real
+             calibrated range_min/range_max (ticks, 4096/rev) converted through this file's
+             leader-degree<->sim-radian mapping (see ARM_OFFSET_DEG/ARM_SIGN in bridge_node.py),
+             each clamped so it never exceeds this joint's own physical <joint range=...> above
+             (left untouched -- that's mesh/collision-derived, not something to casually widen).
+             Wrist_Roll: genuinely a continuous-rotation joint on the real robot (no physical hard
+             stop, see my_lekiwi.json's arm_wrist_roll range_min/max spanning the full 0-4095 tick
+             circle) -- but hw_bridge_node.py's DEGREE_CLAMP still silently caps every relayed
+             command at +-160 deg regardless of joint. First attempt left this one unbounded,
+             reasoning "it's continuous, no fix needed" -- wrong: that made the sim slider let you
+             ask for up to 180 deg, a request the real robot's own safety clamp would silently cut
+             down to 160, so what you saw in the sim didn't match what actually happened on the
+             real robot (confirmed live: sim commanded 180 deg, real settled at ~158). +-160 here
+             matches the true effective ceiling, not the joint's own (irrelevant) physical range. -->
         <position class="Rotation" name="Rotation" joint="Rotation" kp="150" ctrlrange="-2.00713 2.00713"/>
         <position class="Pitch" name="Pitch" joint="Pitch" ctrlrange="-3.14158 0.17453"/>
         <position class="Elbow" name="Elbow" joint="Elbow" ctrlrange="-0.08727 3.14158"/>
         <position class="Wrist_Pitch" name="Wrist_Pitch" joint="Wrist_Pitch" ctrlrange="-0.34907 3.14159"/>
-        <position class="Wrist_Roll" name="Wrist_Roll" joint="Wrist_Roll"/>
+        <position class="Wrist_Roll" name="Wrist_Roll" joint="Wrist_Roll" ctrlrange="-2.79253 2.79253"/>
         <!-- ctrlrange overridden 2026-08-21 to match the real joint range (was the shared
              so_arm100 default of +-pi, way past the actual mechanical limits). forcerange was
              also briefly set to the official SO-101 gripper's real spec (-3.35/3.35 N*m) but that
