@@ -3,7 +3,7 @@
 Forked from [SIGRobotics-UIUC/LeKiwi-sim](https://github.com/SIGRobotics-UIUC/LeKiwi-sim)
 — all credit for the original Fusion→MuJoCo conversion and mesh work goes there. This
 fork carries local physics/model fixes made while driving this specific MJCF from ROS 2
-as part of [lekiwi-so101-ros2-mujoco](https://github.com/YOUR_GITHUB_USERNAME/lekiwi-so101-ros2-mujoco)
+as part of [lekiwi-so101-ros2-mujoco](https://github.com/LucaMacesanu/for_lekiwi_so101_ros2_mujoco)
 — see that repo for the ROS bridge code, full setup docs, and pitfalls.
 
 ## Usage
