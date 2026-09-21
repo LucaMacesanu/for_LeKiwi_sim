@@ -169,3 +169,6 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+
+# MuJoCo runtime warning log -- regenerated on every sim run, not real content
+MUJOCO_LOG.TXT
