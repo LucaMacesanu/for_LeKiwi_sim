@@ -115,7 +115,8 @@
                      (-100 to +160, see WRIST_ROLL_CLAMP in leader_arm_node.py/hw_bridge_node.py),
                      converted through sim_deg = -leader_deg + 180, with 5 deg extra margin
                      outside the actuator's own ctrlrange below (20-280 deg). -->
-                <joint axis="0 0 1" range="0.26180 4.97419"/>
+                <!-- Shifted +90 deg 2026-09-25 along with the ctrlrange below (offset 180 -> 270). -->
+                <joint axis="0 0 1" range="1.83260 6.54499"/>
             </default>
             <default class="Jaw">
                 <!-- Real range from the official SO-ARM100 gripper joint (2026-08-21), replacing
@@ -147,10 +148,17 @@
 
 
     <actuator>
-        <!-- Base drive motors -->
-        <motor name="drive_motor_1" joint="ST3215_Servo_Motor-v1-2_Hub---Servo" gear="1" />
-        <motor name="drive_motor_2" joint="ST3215_Servo_Motor-v1-1_Hub-2---Servo" gear="1" />
-        <motor name="drive_motor_3" joint="ST3215_Servo_Motor-v1_Revolute-40" gear="1" />
+        <!-- Base drive motors: VELOCITY servos (ctrl = wheel speed, rad/s), like the real STS3215 wheels,
+             which LeRobot runs in velocity mode. Changed 2026-09-25 from <motor> (ctrl = torque): with raw
+             torque, the lightly loaded back wheel (~4 N of the ~48 N weight) spun up freely while the two
+             heavily loaded front wheels (~21 N each) stayed below static friction at keyboard speeds, so the
+             front wheels didn't visibly turn. A velocity servo holds the commanded speed whatever the load.
+             kv=3 with armature 0.01 on the wheel joints (a stand-in for the geared servo's rotor inertia) is
+             stable with the default Euler integrator (headless-tested kv 0.5-5: kv >= 2 tracks within ~3%).
+             forcerange +-3 N*m ~ the STS3215's stall torque at 12 V. -->
+        <velocity name="drive_motor_1" joint="ST3215_Servo_Motor-v1-2_Hub---Servo" kv="3" forcerange="-3 3" />
+        <velocity name="drive_motor_2" joint="ST3215_Servo_Motor-v1-1_Hub-2---Servo" kv="3" forcerange="-3 3" />
+        <velocity name="drive_motor_3" joint="ST3215_Servo_Motor-v1_Revolute-40" kv="3" forcerange="-3 3" />
 
         <!-- Arm joints -->
         <!-- Rotation gets a higher kp (150 vs the so_arm100 default 50) than the other arm
@@ -185,7 +193,9 @@
              reference -- wrong, see the class="Wrist_Roll" joint range above for the real
              asymmetric hand-found hard stop). Matches WRIST_ROLL_CLAMP (-100/+160 leader-degree)
              in leader_arm_node.py/hw_bridge_node.py, converted via sim_deg = -leader_deg + 180. -->
-        <position class="Wrist_Roll" name="Wrist_Roll" joint="Wrist_Roll" ctrlrange="0.34907 4.88692"/>
+        <!-- Re-centered 2026-09-25 for bridge_node's wrist_roll offset 270 (was 180): same -100/+160
+             leader-degree window, now via sim_deg = -leader_deg + 270 -> 110..370 deg. -->
+        <position class="Wrist_Roll" name="Wrist_Roll" joint="Wrist_Roll" ctrlrange="1.91986 6.45772"/>
         <!-- ctrlrange overridden 2026-08-21 to match the real joint range (was the shared
              so_arm100 default of +-pi, way past the actual mechanical limits). forcerange was
              also briefly set to the official SO-101 gripper's real spec (-3.35/3.35 N*m) but that
@@ -229,7 +239,7 @@
                     <geom name="ST3215_Servo_Motor-v1-2_geom" type="mesh" mesh="ST3215_Servo_Motor-v1-2" pos="0 0 0" euler="0 0 0" />
                     <inertial mass="0.01647407405"pos="-0.014664257020729004 -0.008722816656342332 1.2191853053420506e-06" fullinertia="2.575227097e-06 3.478422914e-06 4.553937246e-06 2.987895428e-08 -4.499717319e-10 2.221375363e-10" />
                     <body name="3_8-Hex-Bore-Plastic-VersaHub-217-5828-v2-2" pos="-0.025500000000000002 0.011187500000000003 2.220446049250313e-18" euler="-1.5707963267948966 1.5192908393215678e-64 3.141592653589793">
-                        <joint name="ST3215_Servo_Motor-v1-2_Hub---Servo" type="hinge" axis="6.887535064975403e-49 -3.749399456654644e-33 1.0" pos="-4.4408920985006255e-18 -3.469446951953615e-18 -0.0015874999999999917" />
+                        <joint name="ST3215_Servo_Motor-v1-2_Hub---Servo" type="hinge" armature="0.01" axis="6.887535064975403e-49 -3.749399456654644e-33 1.0" pos="-4.4408920985006255e-18 -3.469446951953615e-18 -0.0015874999999999917" />
                         <geom name="3_8-Hex-Bore-Plastic-VersaHub-217-5828-v2-2_geom" type="mesh" mesh="3_8-Hex-Bore-Plastic-VersaHub-217-5828-v2-2" pos="0 0 0" euler="0 0 0" />
                         <inertial mass="0.02166374027"pos="8.50877658112488e-09 7.358945011137765e-09 0.0023811166424899887" fullinertia="3.07407294e-06 3.074069018e-06 5.727944504e-06 -7.979182373e-13 4.389980067e-13 3.796655508e-13" />
                         <body name="4-Omni-Directional-Wheel_Single_Body-v1-2" pos="-2.453269466693399e-18 0.0 0.0174625" euler="-3.141592653589793 -1.5192908393215678e-64 -0.2617993877991494">
@@ -288,7 +298,7 @@
                     <geom name="ST3215_Servo_Motor-v1-1_geom" type="mesh" mesh="ST3215_Servo_Motor-v1-1" pos="0 0 0" euler="0 0 0" />
                     <inertial mass="0.01647407405"pos="-0.014664257020728995 -0.008722816656342374 1.2191853053600496e-06" fullinertia="2.575227097e-06 3.478422914e-06 4.553937246e-06 2.987895428e-08 -4.499717319e-10 2.221375363e-10" />
                     <body name="3_8-Hex-Bore-Plastic-VersaHub-217-5828-v2-1" pos="-0.02550000000000004 0.011187499999999986 0.0" euler="-1.5707963267948966 2.220446049250324e-16 1.6021677874353734e-16">
-                        <joint name="ST3215_Servo_Motor-v1-1_Hub-2---Servo" type="hinge" axis="-2.018922194424455e-07 5.551115123125783e-17 0.9999996503124177" pos="1.0279185592260934e-07 6.850769951327593e-18 -0.0015873219592831226" />
+                        <joint name="ST3215_Servo_Motor-v1-1_Hub-2---Servo" type="hinge" armature="0.01" axis="-2.018922194424455e-07 5.551115123125783e-17 0.9999996503124177" pos="1.0279185592260934e-07 6.850769951327593e-18 -0.0015873219592831226" />
                         <geom name="3_8-Hex-Bore-Plastic-VersaHub-217-5828-v2-1_geom" type="mesh" mesh="3_8-Hex-Bore-Plastic-VersaHub-217-5828-v2-1" pos="0 0 0" euler="0 0 0" />
                         <inertial mass="0.02166374027"pos="8.508776579152501e-09 7.358945011269938e-09 0.0023811166424899787" fullinertia="3.07407294e-06 3.074069018e-06 5.727944504e-06 -7.97918242e-13 4.389979966e-13 3.796655438e-13" />
                         <body name="4-Omni-Directional-Wheel_Single_Body-v1-1" pos="-8.88178419700111e-18 3.3306690738754695e-17 0.01746250000000007" euler="3.141592653589793 5.5511151231257747e-17 1.8325957145940461">
@@ -347,7 +357,7 @@
                     <geom name="ST3215_Servo_Motor-v1_geom" type="mesh" mesh="ST3215_Servo_Motor-v1" pos="0 0 0" euler="0 0 0" />
                     <inertial mass="0.01647407405"pos="-0.014664257020729005 -0.00872281665634233 1.2191853053530741e-06" fullinertia="2.575227097e-06 3.478422914e-06 4.553937246e-06 2.987895428e-08 -4.499717319e-10 2.221375363e-10" />
                     <body name="3_8-Hex-Bore-Plastic-VersaHub-217-5828-v2" pos="-0.02549999999999999 0.011187500000000003 -8.881784197001253e-18" euler="-1.5707963267948966 2.4155320165495564e-32 1.570796326794897">
-                        <joint name="ST3215_Servo_Motor-v1_Revolute-40" type="hinge" axis="-1.2961506867803505e-16 -2.018922189983563e-07 0.9999996503124184" pos="2.796134304347991e-17 1.2953369686987196e-08 -0.0015874775641056748" />
+                        <joint name="ST3215_Servo_Motor-v1_Revolute-40" type="hinge" armature="0.01" axis="-1.2961506867803505e-16 -2.018922189983563e-07 0.9999996503124184" pos="2.796134304347991e-17 1.2953369686987196e-08 -0.0015874775641056748" />
                         <geom name="3_8-Hex-Bore-Plastic-VersaHub-217-5828-v2_geom" type="mesh" mesh="3_8-Hex-Bore-Plastic-VersaHub-217-5828-v2" pos="0 0 0" euler="0 0 0" />
                         <inertial mass="0.02166374027"pos="8.508776583007207e-09 7.358945014555165e-09 0.0023811166424899874" fullinertia="3.07407294e-06 3.074069018e-06 5.727944504e-06 -7.979182368e-13 4.389980079e-13 3.796655297e-13" />
                         <body name="4-Omni-Directional-Wheel_Single_Body-v1" pos="-2.220446049250313e-18 -7.105427357601001e-17 0.017462499999999947" euler="-3.141592653589793 6.689058043222894e-18 -0.2617993877991494">
